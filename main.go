@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 
@@ -10,22 +9,15 @@ import (
 )
 
 func main() {
-	// Replace YOUR_PROJECT_ID with your actual Infura project ID
-	conn, err := ethclient.Dial("https://mainnet.infura.io")
+	client, err := ethclient.Dial("HTTP://127.0.0.1:7545") // Connect to Ganache
 	if err != nil {
-		log.Fatalf("Whoops, something went wrong: %v", err)
+		log.Fatal(err)
 	}
+	fmt.Println("we have a connection")
+	_ = client // we'll use this in the upcoming sections
 
-	ctx := context.Background()
-	txHash := common.HexToHash("0xcc9b91dee308231ff6ac0dd09dc8731682185c87e588bb6f3f1e79bf9f3f3f12")
-	tx, pending, err := conn.TransactionByHash(ctx, txHash)
-	if err != nil {
-		log.Fatalf("Failed to get transaction by hash: %v", err)
-	}
-
-	if !pending {
-		fmt.Println(tx)
-	} else {
-		fmt.Println("Transaction is still pending")
-	}
+	address := common.HexToAddress("0xdAe6cC6fB09b0be1d6D6817D0E8Af85104a2Dfe7")
+	fmt.Println(address.Hex())
+	// fmt.Println(address.Hash().Hex()) 
+	fmt.Println(address.Bytes())     
 }
