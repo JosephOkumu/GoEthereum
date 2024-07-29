@@ -18,36 +18,47 @@ import (
 )
 
 func main() {
-	client, err := ethclient.Dial("HTTP://127.0.0.1:7545") // Connect to Ganache
+	client, err := connectToEthereum()
 	if err != nil {
-		log.Printf("Failed to connect to the Ethereum client: %v", err)
-		return
+		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+	}
+
+	checkBalance(client, "0x1547d00fd8fcf012D04163B758A3D6110bCD2C1a")
+	generateNewWallet()
+	transferETH(client)
+}
+
+func connectToEthereum() (*ethclient.Client, error) {
+	client, err := ethclient.Dial("HTTP://127.0.0.1:7545")
+	if err != nil {
+		return nil, err
 	}
 	fmt.Println("We have a connection")
+	return client, nil
+}
 
-	// Working with the address
-	address := common.HexToAddress("0xcc05BbBF7eb60d01803007eBAc0362447AA95199")
+func checkBalance(client *ethclient.Client, addressStr string) {
+	addressStr = "0x1547d00fd8fcf012D04163B758A3D6110bCD2C1a"
+	address := common.HexToAddress(addressStr)
 	fmt.Println(address.Hex())
 	fmt.Println(address.Bytes())
 
-	// Check balance
-	account := common.HexToAddress("0xcc05BbBF7eb60d01803007eBAc0362447AA95199")
-	balance, err := client.BalanceAt(context.Background(), account, nil)
+	balance, err := client.BalanceAt(context.Background(), address, nil)
 	if err != nil {
 		log.Printf("Error getting balance: %v", err)
 		return
 	}
 	fmt.Printf("Current balance: %v\n", balance)
 
-	// Check the pending balance
-	pendingBalance, err := client.PendingBalanceAt(context.Background(), account)
+	pendingBalance, err := client.PendingBalanceAt(context.Background(), address)
 	if err != nil {
 		log.Printf("Error getting pending balance: %v", err)
 		return
 	}
 	fmt.Printf("Pending balance: %v\n", pendingBalance)
+}
 
-	// Generating new Wallet
+func generateNewWallet() {
 	privateKey, err := crypto.GenerateKey()
 	if err != nil {
 		log.Printf("Error generating key: %v", err)
@@ -65,68 +76,49 @@ func main() {
 	publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
 	fmt.Printf("Public Key: %s\n", hexutil.Encode(publicKeyBytes)[4:])
 
-	address2 := crypto.PubkeyToAddress(*publicKeyECDSA).Hex()
-	fmt.Printf("Newly generated wallet address: %s\n", address2)
+	address := crypto.PubkeyToAddress(*publicKeyECDSA).Hex()
+	fmt.Printf("Newly generated wallet address: %s\n", address)
 
 	hash := sha3.NewLegacyKeccak256()
 	hash.Write(publicKeyBytes[1:])
 	fmt.Printf("Encoded wallet address: %v\n", hexutil.Encode(hash.Sum(nil)[12:]))
+}
 
-	// Transferring ETH
-	// Loading private key
-	newPrivateKey, err := crypto.HexToECDSA("e5f9b5a2ddcec8fd238b7bb4412c6f73b0ea1ecce62207010fa66ed8dff2918f")
+func transferETH(client *ethclient.Client) {
+	privateKey, err := crypto.HexToECDSA("1b3a311ed6b94f6a897aa9bc0849eec8ea9c227503de64094e6170688f83cb80")
 	if err != nil {
 		log.Printf("Error loading private key: %v", err)
 		return
 	}
 
-	// Generating public key from private key.
-	newPublicKey := newPrivateKey.Public()
-	newPublicKeyECDSA, ok := newPublicKey.(*ecdsa.PublicKey)
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {
 		log.Printf("Cannot assert type: publicKey is not of type *ecdsa.PublicKey")
 		return
 	}
-	fromAddress := crypto.PubkeyToAddress(*newPublicKeyECDSA)
-
-	// Check balance of sending account
-	senderBalance, err := client.BalanceAt(context.Background(), fromAddress, nil)
-	if err != nil {
-		log.Printf("Error getting sender's balance: %v", err)
-		return
-	}
-	log.Printf("Balance of sending account: %v", senderBalance)
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 
 	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
 		log.Printf("Error getting nonce: %v", err)
 		return
 	}
-	log.Printf("Nonce: %d", nonce)
 
-	// Converting ether to transact into Wei
 	value := big.NewInt(5000000000000000000) // 5 ETH
-	gasLimit := uint64(21000)                // Standard gas limit for simple transactions
+	gasLimit := uint64(21000)
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
 		log.Printf("Error getting suggested gas price: %v", err)
 		return
 	}
-	log.Printf("Suggested gas price: %v", gasPrice)
 
-	toAddress := common.HexToAddress("0xD7Cbc245b0f315531c5A93498B3579fa22da66D5")
+	toAddress := common.HexToAddress("0x98Db73401ccB0621Aa104E800646447F39f64456")
 	var data []byte
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
 
-	// chainID, err := client.NetworkID(context.Background())
-	// if err != nil {
-	// 	log.Printf("Error getting chain ID: %v", err)
-	// 	return
-	// }
-	chainID := big.NewInt(1337) // or whatever your Ganache chain ID is
-	log.Printf("Chain ID: %v", chainID)
-
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), newPrivateKey)
+	chainID := big.NewInt(1337)
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
 	if err != nil {
 		log.Printf("Error signing transaction: %v", err)
 		return
@@ -140,7 +132,6 @@ func main() {
 
 	fmt.Printf("Transaction sent: %s\n", signedTx.Hash().Hex())
 
-	// Wait for the transaction to be mined
 	receipt, err := waitForTx(client, signedTx.Hash())
 	if err != nil {
 		log.Printf("Error waiting for transaction: %v", err)
@@ -153,15 +144,7 @@ func main() {
 		fmt.Println("Transaction failed")
 	}
 
-	// Check balance of the sending account after the transaction 
-	txAccount := common.HexToAddress("0xc6D3B650C9456bE4551b9e543485a2F04bBc5eD8")
-	txBalance, err := client.BalanceAt(context.Background(), txAccount, nil)
-	if err != nil {
-		log.Printf("Error getting balance: %v", err)
-		return
-	}
-	fmt.Printf("Current balance: %v\n", txBalance)
-
+	checkBalance(client, "0x98Db73401ccB0621Aa104E800646447F39f64456")
 }
 
 func waitForTx(client *ethclient.Client, txHash common.Hash) (*types.Receipt, error) {
