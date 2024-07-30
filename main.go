@@ -7,7 +7,6 @@ import (
 	"log"
 	"math/big"
 	"time"
-
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -23,7 +22,6 @@ func main() {
 		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
 	}
 
-	checkBalance(client, "0x1547d00fd8fcf012D04163B758A3D6110bCD2C1a")
 	generateNewWallet()
 	transferETH(client)
 }
@@ -38,7 +36,6 @@ func connectToEthereum() (*ethclient.Client, error) {
 }
 
 func checkBalance(client *ethclient.Client, addressStr string) {
-	addressStr = "0x1547d00fd8fcf012D04163B758A3D6110bCD2C1a"
 	address := common.HexToAddress(addressStr)
 	fmt.Println(address.Hex())
 	fmt.Println(address.Bytes())
@@ -64,8 +61,6 @@ func generateNewWallet() {
 		log.Printf("Error generating key: %v", err)
 		return
 	}
-	privateKeyBytes := crypto.FromECDSA(privateKey)
-	fmt.Printf("PrivateKey: %v\n", hexutil.Encode(privateKeyBytes)[2:])
 
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
@@ -74,7 +69,6 @@ func generateNewWallet() {
 		return
 	}
 	publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
-	fmt.Printf("Public Key: %s\n", hexutil.Encode(publicKeyBytes)[4:])
 
 	address := crypto.PubkeyToAddress(*publicKeyECDSA).Hex()
 	fmt.Printf("Newly generated wallet address: %s\n", address)
@@ -85,7 +79,7 @@ func generateNewWallet() {
 }
 
 func transferETH(client *ethclient.Client) {
-	privateKey, err := crypto.HexToECDSA("1b3a311ed6b94f6a897aa9bc0849eec8ea9c227503de64094e6170688f83cb80")
+	privateKey, err := crypto.HexToECDSA("8183eafcbb0de4092d1a0ec46555bbe663931b86d469a03b282f7d01f62df3bb")
 	if err != nil {
 		log.Printf("Error loading private key: %v", err)
 		return
@@ -113,7 +107,7 @@ func transferETH(client *ethclient.Client) {
 		return
 	}
 
-	toAddress := common.HexToAddress("0x98Db73401ccB0621Aa104E800646447F39f64456")
+	toAddress := common.HexToAddress("0x4f699A60790b74FB2DD3CCf393a3b8f3CA79fE9C")
 	var data []byte
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
 
@@ -144,7 +138,7 @@ func transferETH(client *ethclient.Client) {
 		fmt.Println("Transaction failed")
 	}
 
-	checkBalance(client, "0x98Db73401ccB0621Aa104E800646447F39f64456")
+	checkBalance(client, "0x0029ba3995C24f07739F4d32Dd5c35D1B9Ad6897")
 }
 
 func waitForTx(client *ethclient.Client, txHash common.Hash) (*types.Receipt, error) {
