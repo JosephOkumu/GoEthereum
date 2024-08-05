@@ -4,7 +4,7 @@ This program uses Golang to interact with the Ethereum blockchain.
 This section illustrates how to make use of this program.
 
 ### Installation
-To run this program, download and install the latest version of Go from [here](https://go.dev/doc/install) and download Ganache [here] (https://archive.trufflesuite.com/ganache/)
+To run this program, download and install the latest version of Go from [here](https://go.dev/doc/install) and download Ganache [here](https://archive.trufflesuite.com/ganache/)
 
 ### Usage
 1. Clone this repository on to the terminal by using the following command:
